@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Movie Watchlist</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #ddd;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .tab-button.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .add-form {
+            margin-bottom: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .movie-list {
+            margin-top: 20px;
+        }
+
+        .movie-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .movie-info {
+            flex-grow: 1;
+        }
+
+        .movie-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .movie-details {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+
+        .delete-btn {
+            background-color: #ff4444;
+        }
+
+        .move-btn {
+            background-color: #2196F3;
+        }
+
+        .empty-message {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Movie Watchlist</h1>
+        
+        <div class="tabs">
+            <button class="tab-button active" data-tab="watched">Watched Movies</button>
+            <button class="tab-button" data-tab="to-watch">Want to Watch</button>
+        </div>
+
+        <!-- Watched Movies Section -->
+        <div id="watched" class="tab-content active">
+            <div class="add-form">
+                <h2>Add Watched Movie</h2>
+                <form id="watched-form">
+                    <div class="form-group">
+                        <label>Movie Title</label>
+                        <input type="text" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Rating</label>
+                        <select required>
+                            <option value="5">⭐⭐⭐⭐⭐</option>
+                            <option value="4">⭐⭐⭐⭐</option>
+                            <option value="3">⭐⭐⭐</option>
+                            <option value="2">⭐⭐</option>
+                            <option value="1">⭐</option>
+                        </select>
+                    </div>
+                    <button type="submit">Add Movie</button>
+                </form>
+            </div>
+            <div id="watched-list" class="movie-list"></div>
+        </div>
+
+        <!-- Want to Watch Section -->
+        <div id="to-watch" class="tab-content">
+            <div class="add-form">
+                <h2>Add Movie to Watch</h2>
+                <form id="to-watch-form">
+                    <div class="form-group">
+                        <label>Movie Title</label>
+                        <input type="text" required>
+                    </div>
+                    <button type="submit">Add to Watchlist</button>
+                </form>
+            </div>
+            <div id="to-watch-list" class="movie-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize movies from localStorage or empty arrays
+        let watchedMovies = JSON.parse(localStorage.getItem('watchedMovies')) || [];
+        let toWatchMovies = JSON.parse(localStorage.getItem('toWatchMovies')) || [];
+
+        // DOM Elements
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+        const watchedForm = document.getElementById('watched-form');
+        const toWatchForm = document.getElementById('to-watch-form');
+        const watchedList = document.getElementById('watched-list');
+        const toWatchList = document.getElementById('to-watch-list');
+
+        // Tab Switching
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                tabContents.forEach(content => content.classList.remove('active'));
+                
+                button.classList.add('active');
+                document.getElementById(button.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Add Watched Movie
+        watchedForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const title = e.target.elements[0].value;
+            const rating = e.target.elements[1].value;
+            
+            watchedMovies.push({
+                id: Date.now(),
+                title,
+                rating,
+                date: new Date().toLocaleDateString()
+            });
+            
+            saveAndRender();
+            watchedForm.reset();
+        });
+
+        // Add To Watch Movie
+        toWatchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const title = e.target.elements[0].value;
+            
+            toWatchMovies.push({
+                id: Date.now(),
+                title,
+                date: new Date().toLocaleDateString()
+            });
+            
+            saveAndRender();
+            toWatchForm.reset();
+        });
+
+        // Delete Movie
+        function deleteMovie(id, list) {
+            if (list === 'watched') {
+                watchedMovies = watchedMovies.filter(movie => movie.id !== id);
+            } else {
+                toWatchMovies = toWatchMovies.filter(movie => movie.id !== id);
+            }
+            saveAndRender();
+        }
+
+        // Move to Watched
+        function moveToWatched(id) {
+            const movie = toWatchMovies.find(movie => movie.id === id);
+            toWatchMovies = toWatchMovies.filter(movie => movie.id !== id);
+            watchedMovies.push({
+                ...movie,
+                rating: '5',
+                id: Date.now()
+            });
+            saveAndRender();
+        }
+
+        // Save to localStorage and render lists
+        function saveAndRender() {
+            localStorage.setItem('watchedMovies', JSON.stringify(watchedMovies));
+            localStorage.setItem('toWatchMovies', JSON.stringify(toWatchMovies));
+            renderLists();
+        }
+
+        // Render both lists
+        function renderLists() {
+            // Render Watched Movies
+            if (watchedMovies.length === 0) {
+                watchedList.innerHTML = '<div class="empty-message">No watched movies yet</div>';
+            } else {
+                watchedList.innerHTML = watchedMovies.map(movie => `
+                    <div class="movie-item">
+                        <div class="movie-info">
+                            <div class="movie-title">${movie.title}</div>
+                            <div class="movie-details">
+                                ${'⭐'.repeat(movie.rating)} • Added: ${movie.date}
+                            </div>
+                        </div>
+                        <button class="delete-btn" onclick="deleteMovie(${movie.id}, 'watched')">Delete</button>
+                    </div>
+                `).join('');
+            }
+
+            // Render To Watch Movies
+            if (toWatchMovies.length === 0) {
+                toWatchList.innerHTML = '<div class="empty-message">No movies in watchlist</div>';
+            } else {
+                toWatchList.innerHTML = toWatchMovies.map(movie => `
+                    <div class="movie-item">
+                        <div class="movie-info">
+                            <div class="movie-title">${movie.title}</div>
+                            <div class="movie-details">Added: ${movie.date}</div>
+                        </div>
+                        <div class="action-buttons">
+                            <button class="move-btn" onclick="moveToWatched(${movie.id})">Watched</button>
+                            <button class="delete-btn" onclick="deleteMovie(${movie.id}, 'to-watch')">Delete</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Initial render
+        renderLists();
+    </script>
+</body>
+</html>
